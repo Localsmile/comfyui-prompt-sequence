@@ -476,7 +476,7 @@ class PromptSequenceText:
                     "STRING",
                     {
                         "multiline": True,
-                        "default": "a quiet portrait\nwide cinematic landscape\nclose-up character detail",
+                        "default": "",
                         "tooltip": "Each non-empty line becomes one prompt item.",
                     },
                 ),

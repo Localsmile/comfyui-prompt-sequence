@@ -6,6 +6,7 @@ const IMAGE_MASK_SEQUENCE_CLASS = "ComfyUIPromptImageMaskSequence";
 const COMBO_CLASS = "ComfyUIPromptSequenceCombo";
 const JOIN_CLASS = "ComfyUIPromptSequenceJoin";
 const MAX_JOIN_INPUTS = 32;
+const ALL_TOPICS = "__all_topics__";
 const STYLE_ID = "prompt-sequence-style";
 const WIDGET_TOOLTIPS = {
   ComfyUIPromptSequenceText: {
@@ -98,11 +99,8 @@ function injectStyle() {
     }
     .ps-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
       gap: 6px;
-      max-height: 420px;
-      overflow-x: hidden;
-      overflow-y: auto;
       padding-right: 2px;
     }
     .ps-card {
@@ -213,6 +211,19 @@ function injectStyle() {
       gap: 6px;
       margin-bottom: 6px;
     }
+    .ps-file-field {
+      display: grid;
+      grid-template-rows: auto auto;
+      gap: 3px;
+      min-width: 0;
+      color: #bbb;
+    }
+    .ps-file-field span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 11px;
+    }
     .ps-editor-actions {
       display: flex;
       gap: 6px;
@@ -248,7 +259,7 @@ function injectStyle() {
     }
     @media (max-width: 520px) {
       .ps-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
       }
       .ps-toolbar {
         grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -311,8 +322,20 @@ function findTopic(project, topicId) {
   return project?.topics?.find((topic) => topic.id === topicId) || null;
 }
 
+function projectItems(project) {
+  return (project?.topics || []).flatMap((topic) => topic.items || []);
+}
+
+function topicForItem(project, item) {
+  const topicId = String(item?.id || "").split("/")[1] || "";
+  return findTopic(project, topicId);
+}
+
 function currentItems(library, state) {
   const project = findProject(library, state.project);
+  if (state.topic === ALL_TOPICS) {
+    return projectItems(project);
+  }
   const topic = findTopic(project, state.topic);
   return topic?.items || [];
 }
@@ -341,6 +364,18 @@ function makeInput(placeholder) {
   return input;
 }
 
+function makeFileField(labelText) {
+  const field = document.createElement("label");
+  field.className = "ps-file-field";
+  const label = document.createElement("span");
+  label.textContent = labelText;
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "image/*";
+  field.append(label, input);
+  return { field, input };
+}
+
 function makeButton(text) {
   const button = document.createElement("button");
   button.type = "button";
@@ -358,11 +393,13 @@ function normalizeState(library, state) {
   if (!topics.length) {
     return { project: project.id, topic: "", selected: [] };
   }
-  const topic = findTopic(project, state.topic) || topics[0];
-  const validIds = new Set((topic.items || []).map((item) => item.id));
+  const topic = state.topic === ALL_TOPICS ? null : findTopic(project, state.topic);
+  const nextTopic = state.topic === ALL_TOPICS || !topic ? ALL_TOPICS : topic.id;
+  const items = nextTopic === ALL_TOPICS ? projectItems(project) : topic.items || [];
+  const validIds = new Set(items.map((item) => item.id));
   return {
     project: project.id,
-    topic: topic.id,
+    topic: nextTopic,
     selected: (state.selected || []).filter((id) => validIds.has(id)),
   };
 }
@@ -598,16 +635,14 @@ function setupPicker(node, pickerOptions = {}) {
   const projectInput = makeInput("Project");
   const topicInput = makeInput("Topic");
   const nameInput = makeInput("Prompt name");
-  const imageInput = document.createElement("input");
-  imageInput.type = "file";
-  imageInput.accept = "image/*";
-  const maskInput = document.createElement("input");
-  maskInput.type = "file";
-  maskInput.accept = "image/*";
+  const imageField = makeFileField(options.supportsMask ? "Image file" : "Preview image");
+  const imageInput = imageField.input;
+  const maskField = makeFileField("Mask file");
+  const maskInput = maskField.input;
   if (options.supportsMask) {
-    editorGrid.append(projectInput, topicInput, nameInput, imageInput, maskInput);
+    editorGrid.append(projectInput, topicInput, nameInput, imageField.field, maskField.field);
   } else {
-    editorGrid.append(projectInput, topicInput, nameInput, imageInput);
+    editorGrid.append(projectInput, topicInput, nameInput, imageField.field);
   }
 
   const promptInput = document.createElement("textarea");
@@ -632,7 +667,9 @@ function setupPicker(node, pickerOptions = {}) {
 
   const openEditor = (item = null) => {
     const project = findProject(library, state.project);
-    const topic = findTopic(project, state.topic);
+    const topic = item
+      ? topicForItem(project, item)
+      : findTopic(project, state.topic) || project?.topics?.[0] || null;
     editor.item = item;
     projectInput.value = project?.name || "";
     topicInput.value = topic?.name || "";
@@ -674,6 +711,7 @@ function setupPicker(node, pickerOptions = {}) {
       topicSelect.append(option("", "No topics", true));
       return;
     }
+    topicSelect.append(option(ALL_TOPICS, "All topics", state.topic === ALL_TOPICS));
     for (const topic of topics) {
       topicSelect.append(option(topic.id, topic.name, topic.id === state.topic));
     }
@@ -733,7 +771,7 @@ function setupPicker(node, pickerOptions = {}) {
     if (!items.length) {
       const empty = document.createElement("div");
       empty.className = "ps-empty";
-      empty.textContent = "No prompts in this topic.";
+      empty.textContent = state.topic === ALL_TOPICS ? "No prompts in this project." : "No prompts in this topic.";
       grid.append(empty);
       return;
     }
@@ -801,8 +839,7 @@ function setupPicker(node, pickerOptions = {}) {
 
   projectSelect.addEventListener("change", () => {
     state.project = projectSelect.value;
-    const project = findProject(library, state.project);
-    state.topic = project?.topics?.[0]?.id || "";
+    state.topic = ALL_TOPICS;
     state.selected = [];
     closeEditor();
     render();

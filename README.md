@@ -1,8 +1,6 @@
 # ComfyUI Prompt Sequence
 
 ComfyUI custom nodes for running prompt sequences from one queue.
-Designed for simplicity, these nodes let you run sequences easily without building complicated workflows.
-
 
 ## Install
 
@@ -83,7 +81,8 @@ tag1, tag2, tag3, tag4
 Stores prompt cards with preview images and outputs checked prompts as a text list.
 
 - project/topic/card library
-- square thumbnail grid
+- project-wide `All topics` view
+- responsive square thumbnail grid
 - hover card to view prompt text
 - right-click card to edit or delete
 - preview image is resized to max 512 px
@@ -94,7 +93,8 @@ Stores prompt cards with source images and optional masks.
 
 - outputs `STRING`, `IMAGE`, `MASK`
 - prompt may be empty
-- square thumbnail grid with full-image letterboxing
+- project-wide `All topics` view
+- responsive square thumbnail grid with full-image letterboxing
 - image is saved without resizing
 - optional mask upload
 
