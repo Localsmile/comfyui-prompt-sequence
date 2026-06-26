@@ -1,6 +1,8 @@
 # ComfyUI Prompt Sequence
 
 ComfyUI custom nodes for running prompt sequences from one queue.
+Designed for simplicity, these nodes let you run sequences easily without building complicated workflows.
+
 
 ## Install
 
