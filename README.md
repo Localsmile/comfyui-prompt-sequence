@@ -22,10 +22,12 @@ Outputs one text list from a multiline prompt box.
 - `mode=sequential`: top to bottom
 - `mode=random`: shuffled order
 - `seed=-1`: new random order each queue
+- `max_items=0`: output all prompts
+- `max_items>0`: output up to that many prompts
 
-### Prompt Sequence Combo
+### Prompt Sequence Filter
 
-Limits or shuffles a prompt sequence.
+Optional post-process node for limiting or shuffling an existing text list.
 
 - unconnected: uses its own multiline prompt box
 - connected: uses the connected `source` list and hides the local prompt box
@@ -83,6 +85,8 @@ Stores prompt cards with preview images and outputs checked prompts as a text li
 - project/topic/card library
 - project-wide `All topics` view
 - responsive square thumbnail grid with full-image letterboxing
+- `max_items=0`: output all checked prompts
+- `max_items>0`: output up to that many prompts
 - hover card to view prompt text
 - right-click card to edit or delete
 - preview image is resized to max 512 px
@@ -95,6 +99,8 @@ Stores prompt cards with source images and optional masks.
 - prompt may be empty
 - project-wide `All topics` view
 - responsive square thumbnail grid with full-image letterboxing
+- `max_items=0`: output all checked records
+- `max_items>0`: output up to that many records
 - image is saved without resizing
 - optional mask upload
 
@@ -109,8 +115,8 @@ examples/basic_prompt_sequence_workflow.json
 Minimal graph:
 
 ```text
-Prompt Sequence Text -> Prompt Sequence Combo -> Prompt Sequence Join
-Prompt Sequence Text -> Prompt Sequence Combo -> Prompt Sequence Join
+Prompt Sequence Text -> Prompt Sequence Join
+Prompt Sequence Text -> Prompt Sequence Join
 Prompt Image Mask Sequence -> Prompt Sequence Join
 ```
 

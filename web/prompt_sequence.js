@@ -13,6 +13,7 @@ const WIDGET_TOOLTIPS = {
     prompts: "Each non-empty line becomes one prompt item.",
     mode: "sequential: output top to bottom. random: shuffle before output.",
     seed: "For random mode: -1 makes a new order each queue; a fixed value repeats the same order.",
+    max_items: "0 outputs all prompts. A positive value outputs up to that many prompts.",
   },
   ComfyUIPromptSequenceCombo: {
     prompts: "Used only when source is not connected. Hidden and ignored while source is connected.",
@@ -36,11 +37,13 @@ const WIDGET_TOOLTIPS = {
     selection_json: "Hidden picker state. Use the thumbnail grid instead of editing this manually.",
     mode: "sequential: use checked cards in order. random: shuffle checked cards before output.",
     seed: "For random mode: -1 makes a new order each queue; a fixed value repeats the same order.",
+    max_items: "0 outputs all checked prompts. A positive value outputs up to that many prompts.",
   },
   ComfyUIPromptImageMaskSequence: {
     selection_json: "Hidden picker state. Use the thumbnail grid instead of editing this manually.",
     mode: "sequential: use checked cards in order. random: shuffle checked cards before output.",
     seed: "For random mode: -1 makes a new order each queue; a fixed value repeats the same order.",
+    max_items: "0 outputs all checked records. A positive value outputs up to that many records.",
   },
 };
 

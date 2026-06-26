@@ -496,17 +496,33 @@ class PromptSequenceText:
                         "tooltip": "For random mode: -1 makes a new order each queue; a fixed value repeats the same order.",
                     },
                 ),
+                "max_items": (
+                    "INT",
+                    {
+                        "default": 0,
+                        "min": 0,
+                        "max": 10000,
+                        "step": 1,
+                        "tooltip": "0 outputs all available prompts. A positive value outputs up to that many prompts.",
+                    },
+                ),
             }
         }
 
     @classmethod
-    def IS_CHANGED(cls, prompts: str, mode: str, seed: int):
+    def IS_CHANGED(cls, prompts: str, mode: str, seed: int, max_items: int):
         if mode == "random" and int(seed) < 0:
             return float("NaN")
-        return hashlib.sha1(f"{prompts}\0{mode}\0{seed}".encode("utf-8")).hexdigest()
+        payload = {
+            "prompts": prompts,
+            "mode": mode,
+            "seed": int(seed),
+            "max_items": _as_int(max_items, 0),
+        }
+        return hashlib.sha1(json.dumps(payload, sort_keys=True).encode("utf-8")).hexdigest()
 
-    def build(self, prompts: str, mode: str, seed: int):
-        return (_ordered_values(_split_prompt_lines(prompts), mode, int(seed)),)
+    def build(self, prompts: str, mode: str, seed: int, max_items: int):
+        return (_select_values(_split_prompt_lines(prompts), mode, int(seed), _as_int(max_items, 0)),)
 
 
 class PromptSequenceCombo:
@@ -789,6 +805,16 @@ class PromptImageSequence:
                         "tooltip": "For random mode: -1 makes a new order each queue; a fixed value repeats the same order.",
                     },
                 ),
+                "max_items": (
+                    "INT",
+                    {
+                        "default": 0,
+                        "min": 0,
+                        "max": 10000,
+                        "step": 1,
+                        "tooltip": "0 outputs all checked prompts. A positive value outputs up to that many prompts.",
+                    },
+                ),
             }
         }
 
@@ -798,6 +824,7 @@ class PromptImageSequence:
         selection_json: str,
         mode: str,
         seed: int,
+        max_items: int,
     ):
         if mode == "random" and int(seed) < 0:
             return float("NaN")
@@ -805,6 +832,7 @@ class PromptImageSequence:
             "selection": selection_json,
             "mode": mode,
             "seed": int(seed),
+            "max_items": _as_int(max_items, 0),
             "library": _library_signature(selection_json),
         }
         return hashlib.sha1(json.dumps(payload, sort_keys=True).encode("utf-8")).hexdigest()
@@ -814,11 +842,12 @@ class PromptImageSequence:
         selection_json: str,
         mode: str,
         seed: int,
+        max_items: int,
     ):
         prompts = _load_selected_asset_prompts(selection_json)
         if not prompts:
             prompts = [""]
-        return (_ordered_values(prompts, mode, int(seed)),)
+        return (_select_values(prompts, mode, int(seed), _as_int(max_items, 0)),)
 
 
 class PromptImageMaskSequence:
@@ -856,24 +885,35 @@ class PromptImageMaskSequence:
                         "tooltip": "For random mode: -1 makes a new order each queue; a fixed value repeats the same order.",
                     },
                 ),
+                "max_items": (
+                    "INT",
+                    {
+                        "default": 0,
+                        "min": 0,
+                        "max": 10000,
+                        "step": 1,
+                        "tooltip": "0 outputs all checked records. A positive value outputs up to that many records.",
+                    },
+                ),
             }
         }
 
     @classmethod
-    def IS_CHANGED(cls, selection_json: str, mode: str, seed: int):
+    def IS_CHANGED(cls, selection_json: str, mode: str, seed: int, max_items: int):
         if mode == "random" and int(seed) < 0:
             return float("NaN")
         payload = {
             "selection": selection_json,
             "mode": mode,
             "seed": int(seed),
+            "max_items": _as_int(max_items, 0),
             "library": _library_signature(selection_json),
         }
         return hashlib.sha1(json.dumps(payload, sort_keys=True).encode("utf-8")).hexdigest()
 
-    def build(self, selection_json: str, mode: str, seed: int):
+    def build(self, selection_json: str, mode: str, seed: int, max_items: int):
         records = _load_selected_asset_records(selection_json)
-        records = _select_values(records, mode, int(seed), 0)
+        records = _select_values(records, mode, int(seed), _as_int(max_items, 0))
         images = []
         prompts = []
         masks = []
@@ -901,7 +941,7 @@ NODE_CLASS_MAPPINGS = {
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "ComfyUIPromptSequenceText": "Prompt Sequence Text",
-    "ComfyUIPromptSequenceCombo": "Prompt Sequence Combo",
+    "ComfyUIPromptSequenceCombo": "Prompt Sequence Filter",
     "ComfyUIPromptSequenceJoin": "Prompt Sequence Join",
     "ComfyUIPromptTagFormatter": "Prompt Tag Formatter",
     "ComfyUIPromptImageSequence": "Prompt Image Sequence",
