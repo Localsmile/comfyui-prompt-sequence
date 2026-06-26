@@ -1,6 +1,6 @@
 # ComfyUI Prompt Sequence
 
-ComfyUI custom nodes for running prompt sequences from one queue.
+ComfyUI custom nodes for running prompt/image/mask sequences from one queue.
 
 ## Install
 
