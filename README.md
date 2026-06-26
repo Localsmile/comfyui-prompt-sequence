@@ -1,6 +1,6 @@
 # ComfyUI Prompt Sequence
 
-ComfyUI custom nodes for running prompt/image/mask sequences from one queue.
+ComfyUI custom nodes for running prompt sequences from one queue.
 
 ## Install
 
@@ -28,7 +28,7 @@ Outputs one text list from a multiline prompt box.
 Limits or shuffles a prompt sequence.
 
 - unconnected: uses its own multiline prompt box
-- connected: uses the connected `source` list
+- connected: uses the connected `source` list and hides the local prompt box
 - `max_items=0`: output all available prompts
 - `max_items>0`: output up to that many prompts
 

@@ -525,8 +525,8 @@ class PromptSequenceCombo:
                     "STRING",
                     {
                         "multiline": True,
-                        "default": "a quiet portrait\nwide cinematic landscape\nclose-up character detail",
-                        "tooltip": "Used only when source is not connected. Each non-empty line becomes one prompt item.",
+                        "default": "",
+                        "tooltip": "Used only when source is not connected. Hidden and ignored while source is connected.",
                     },
                 ),
                 "mode": (

@@ -3,6 +3,7 @@ import { api } from "../../scripts/api.js";
 
 const IMAGE_SEQUENCE_CLASS = "ComfyUIPromptImageSequence";
 const IMAGE_MASK_SEQUENCE_CLASS = "ComfyUIPromptImageMaskSequence";
+const COMBO_CLASS = "ComfyUIPromptSequenceCombo";
 const JOIN_CLASS = "ComfyUIPromptSequenceJoin";
 const MAX_JOIN_INPUTS = 32;
 const STYLE_ID = "prompt-sequence-style";
@@ -13,7 +14,7 @@ const WIDGET_TOOLTIPS = {
     seed: "For random mode: -1 makes a new order each queue; a fixed value repeats the same order.",
   },
   ComfyUIPromptSequenceCombo: {
-    prompts: "Used only when source is not connected. Each non-empty line becomes one prompt item.",
+    prompts: "Used only when source is not connected. Hidden and ignored while source is connected.",
     mode: "sequential: keep source order. random: shuffle before max_items is applied.",
     max_items: "0 outputs all available prompts. A positive value outputs up to that many prompts.",
     seed: "For random mode: -1 makes a new order each queue; a fixed value repeats the same order.",
@@ -427,6 +428,68 @@ function setupNodeWidgetTooltips(node, nodeName) {
   for (const widget of node.widgets || []) {
     setWidgetTooltip(widget, tooltips[widget.name]);
   }
+}
+
+function setWidgetHidden(widget, hidden) {
+  if (!widget) {
+    return;
+  }
+  if (!widget._promptSequenceOriginalType) {
+    widget._promptSequenceOriginalType = widget.type;
+    widget._promptSequenceOriginalComputeSize = widget.computeSize;
+  }
+  if (hidden) {
+    widget.type = "hidden";
+    widget.computeSize = () => [0, -4];
+  } else {
+    widget.type = widget._promptSequenceOriginalType;
+    widget.computeSize = widget._promptSequenceOriginalComputeSize;
+  }
+}
+
+function isInputConnected(node, inputName) {
+  return Boolean(
+    (node.inputs || []).find((input) => input.name === inputName && input.link != null),
+  );
+}
+
+function setupComboNode(node) {
+  if (node._promptSequenceComboReady) {
+    return;
+  }
+  node._promptSequenceComboReady = true;
+
+  const syncPromptWidget = () => {
+    const promptsWidget = getWidget(node, "prompts");
+    const sourceConnected = isInputConnected(node, "source");
+    setWidgetHidden(promptsWidget, sourceConnected);
+    if (promptsWidget) {
+      setWidgetTooltip(
+        promptsWidget,
+        sourceConnected
+          ? "Source is connected. Local prompts are hidden, ignored, and saved only for later reuse."
+          : WIDGET_TOOLTIPS.ComfyUIPromptSequenceCombo.prompts,
+      );
+    }
+    node.setSize?.(node.computeSize?.() || node.size);
+    app.graph?.setDirtyCanvas(true, true);
+  };
+
+  const previousOnConfigure = node.onConfigure;
+  node.onConfigure = function () {
+    const result = previousOnConfigure?.apply(this, arguments);
+    syncPromptWidget();
+    return result;
+  };
+
+  const previousOnConnectionsChange = node.onConnectionsChange;
+  node.onConnectionsChange = function () {
+    const result = previousOnConnectionsChange?.apply(this, arguments);
+    syncPromptWidget();
+    return result;
+  };
+
+  syncPromptWidget();
 }
 
 function isJoinTextInput(input) {
@@ -870,6 +933,15 @@ app.registerExtension({
       nodeType.prototype.onNodeCreated = function () {
         const result = onNodeCreated?.apply(this, arguments);
         setupJoinNode(this);
+        return result;
+      };
+    }
+
+    if (nodeData.name === COMBO_CLASS) {
+      const onNodeCreated = nodeType.prototype.onNodeCreated;
+      nodeType.prototype.onNodeCreated = function () {
+        const result = onNodeCreated?.apply(this, arguments);
+        setupComboNode(this);
         return result;
       };
     }
